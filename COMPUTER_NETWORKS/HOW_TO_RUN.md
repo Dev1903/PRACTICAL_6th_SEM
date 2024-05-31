@@ -1,4 +1,4 @@
-1st open server file in cmd
+1st open server file in cmd\n
 compile it using gcc filename.c -o tcpserver
 then write ./tcpserver
 
