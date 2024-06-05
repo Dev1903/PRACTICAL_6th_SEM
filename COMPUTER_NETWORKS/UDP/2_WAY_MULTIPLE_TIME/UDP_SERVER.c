@@ -1,72 +1,35 @@
-#include <stdio.h>
-#include <strings.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define PORT 5000
-#define MAXLINE 1000
-
-// Driver code
-int main()
+#include<stdio.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<string.h>
+#define PORT 8050
+void main()
 {
-    char buffer[MAXLINE];
-    char message[MAXLINE];
-    int listenfd, len, n;
-    struct sockaddr_in servaddr, cliaddr;
-    bzero(&servaddr, sizeof(servaddr));
+	int svrsock_fd;
+	char buffer[1024];
+	struct sockaddr_in svraddr, clnaddr;
+	socklen_t svraddrlen = sizeof(struct sockaddr_in);
+	socklen_t clnaddrlen = sizeof(struct sockaddr_in);
+	svrsock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
-    // Create a UDP Socket
-    listenfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (listenfd < 0) {
-        perror("socket creation failed");
-        exit(EXIT_FAILURE);
-    }
+	svraddr.sin_port = htons(PORT);
+	svraddr.sin_family = AF_INET;
+	svraddr.sin_addr.s_addr = INADDR_ANY;
 
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(PORT);
-    servaddr.sin_family = AF_INET;
+	bind(svrsock_fd, (struct sockaddr *) &svraddr, svraddrlen);
+	printf("WAITING FOR CLIENT !!\n");
+	
+	while(1)
+	{
+		memset(buffer, 0, sizeof(buffer));
+		recvfrom(svrsock_fd, buffer, sizeof(buffer), 0, &clnaddr, &clnaddrlen);
+		printf("Received data from client : %s\n",buffer);
+		if(strcmp(buffer,"exit")==0) break;
 
-    // bind server address to socket descriptor
-    if (bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        perror("bind failed");
-        close(listenfd);
-        exit(EXIT_FAILURE);
-    }
-
-    len = sizeof(cliaddr);
-
-    while(1) {
-        // receive message from client
-        n = recvfrom(listenfd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&cliaddr, &len);
-        if (n < 0) {
-            perror("recvfrom failed");
-            break;
-        }
-        buffer[n] = '\0';
-        printf("Client: %s", buffer); // Note the usage of printf to maintain the newline
-
-        if (strncmp(buffer, "exit", 4) == 0) {
-            printf("Client initiated exit...\n");
-            break;
-        }
-
-        printf("Enter message to send to client: ");
-        fgets(message, MAXLINE, stdin);
-
-        // send response to client
-        int sent_len = sendto(listenfd, message, strlen(message), 0, (struct sockaddr*)&cliaddr, len);
-        if (sent_len < 0) {
-            perror("sendto failed");
-            break;
-        }
-    }
-
-    // close the descriptor
-    close(listenfd);
-    return 0;
+		memset(buffer, 0, sizeof(buffer));
+		printf("Enter data for client : ");
+		gets(buffer);
+		sendto(svrsock_fd, buffer, sizeof(buffer), 0, &clnaddr, clnaddrlen);
+		if(strcmp(buffer,"exit")==0) break;
+	}
 }
