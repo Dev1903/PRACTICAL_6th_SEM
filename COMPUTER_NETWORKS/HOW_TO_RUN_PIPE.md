@@ -1,2 +1,2 @@
-compile it using gcc filename. <br />
+compile it using gcc filename.c <br />
 then write ./a.out
